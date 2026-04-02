@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { creditCard } from "../src/finance";
+import {
+  amount,
+  bitcoinAddress,
+  creditCard,
+  currency,
+  iban,
+} from "../src/finance";
 
 /** Standard Luhn validation on full PAN (including check digit). */
 const isValidLuhnPan = (pan: string): boolean => {
@@ -42,6 +48,20 @@ describe("finance", () => {
         pan.startsWith("54") ||
         pan.startsWith("55");
       expect(ok).toBe(true);
+    }
+  });
+
+  it("iban amount currency bitcoinAddress are well-formed", () => {
+    const cur = new Set(["USD", "EUR", "TRY", "GBP", "JPY", "CHF", "CAD", "AUD"]);
+    for (let i = 0; i < 30; i += 1) {
+      const ib = iban();
+      expect(ib.startsWith("TR")).toBe(true);
+      expect(ib).toMatch(/^TR\d{24}$/);
+      expect(amount()).toMatch(/^\d+\.\d{2}$/);
+      expect(cur.has(currency())).toBe(true);
+      const btc = bitcoinAddress();
+      expect(/^(1|3|bc1q)/.test(btc)).toBe(true);
+      expect(btc.length).toBeGreaterThanOrEqual(26);
     }
   });
 });

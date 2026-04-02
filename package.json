@@ -28,6 +28,51 @@
       "import": "./dist/finance/index.js",
       "require": "./dist/finance/index.cjs"
     },
+    "./location": {
+      "types": "./dist/location/index.d.ts",
+      "import": "./dist/location/index.js",
+      "require": "./dist/location/index.cjs"
+    },
+    "./phone": {
+      "types": "./dist/phone/index.d.ts",
+      "import": "./dist/phone/index.js",
+      "require": "./dist/phone/index.cjs"
+    },
+    "./date": {
+      "types": "./dist/date/index.d.ts",
+      "import": "./dist/date/index.js",
+      "require": "./dist/date/index.cjs"
+    },
+    "./id": {
+      "types": "./dist/id/index.d.ts",
+      "import": "./dist/id/index.js",
+      "require": "./dist/id/index.cjs"
+    },
+    "./color": {
+      "types": "./dist/color/index.d.ts",
+      "import": "./dist/color/index.js",
+      "require": "./dist/color/index.cjs"
+    },
+    "./company": {
+      "types": "./dist/company/index.d.ts",
+      "import": "./dist/company/index.js",
+      "require": "./dist/company/index.cjs"
+    },
+    "./lorem": {
+      "types": "./dist/lorem/index.d.ts",
+      "import": "./dist/lorem/index.js",
+      "require": "./dist/lorem/index.cjs"
+    },
+    "./misc": {
+      "types": "./dist/misc/index.d.ts",
+      "import": "./dist/misc/index.js",
+      "require": "./dist/misc/index.cjs"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "import": "./dist/schema/index.js",
+      "require": "./dist/schema/index.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -37,10 +82,14 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc -p tsconfig.playground.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src tests playground --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "playground": "npm run build && node scripts/playground-server.mjs"
   },
   "keywords": [
@@ -55,8 +104,16 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/parser": "^8.58.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",
+    "typescript-eslint": "^8.58.0",
     "vitest": "^2.1.8"
   }
 }

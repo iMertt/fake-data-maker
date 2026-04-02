@@ -30,10 +30,22 @@ const user = {
   lastName: lastName(),
   username: username(),
   email: email(),
-  creditCard: creditCard()
+  creditCard: creditCard(),
 };
 
 console.log(user);
+```
+
+### Deterministic runs (`seed`)
+
+Use `seed` for repeatable sequences in tests or demos. Use `resetSeed` to go back to `Math.random`.
+
+```ts
+import { firstName, seed, resetSeed } from "nanofake";
+
+seed(42);
+console.log(firstName()); // stable for this seed
+resetSeed();
 ```
 
 ### Tree-shakable imports
@@ -50,16 +62,29 @@ import { email } from "nanofake/internet";
 - `email(): string`
 - `username(): string`
 - `creditCard(): string`
+- `seed(s: number): void` — switch RNG to a deterministic LCG
+- `resetSeed(): void` — restore `Math.random`-backed RNG
 
 `creditCard()` returns **synthetic** 16-digit numbers that pass the Luhn check. They are **not** real payment card numbers, are not issued by any bank, and must not be used where real PANs are expected. Treat them like any other fake test data in logs and APIs (PCI scanners may still flag long digit strings).
 
+## Known limitations
+
+- Name data is English/Turkish-oriented only (`NAME_POOLS`); there is **no** runtime locale selector API yet.
+- Randomness uses `Math.random` by default, or a deterministic linear congruential generator after `seed()`; neither is cryptographically secure.
+- The playground aliases user keys with `normalizeAlias`: non-alphanumeric characters become `_`, empty input becomes `field`, and keys `__proto__`, `constructor`, and `prototype` are prefixed with `_` to avoid prototype pollution when used as object keys.
+
 ## Development
+
+ESLint uses the flat config file `eslint.config.mjs` (required for ESLint 9+).
 
 ```bash
 npm install
 npm run lint
+npm run typecheck
+npm run format
 npm run build
 npm run test
+npm run test:coverage
 ```
 
 ## Local Playground UI
@@ -78,6 +103,8 @@ Playground features:
 - Field selection checkboxes
 - Text filter input
 - JSON output + copy button
+
+The playground script compiles `playground/app.ts` to `playground/app.js` during `npm run build`.
 
 ## License
 

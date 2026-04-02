@@ -4,74 +4,157 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>nanofake Playground</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/playground/styles.css?v=2" />
+    <link rel="stylesheet" href="/playground/styles.css?v=8" />
   </head>
   <body>
-    <div class="bg-shape bg-shape-a"></div>
-    <div class="bg-shape bg-shape-b"></div>
-    <main class="app">
-      <section class="panel panel-controls">
-        <header class="hero">
-          <p class="kicker">nanofake</p>
-          <h1>Data Playground</h1>
-          <p class="subtitle">Build your own fake record schema and generate filtered JSON instantly.</p>
-        </header>
+    <div class="app-grid">
+      <aside class="panel panel-left">
+        <div class="panel-controls">
+          <div class="panel-top">
+            <header class="pg-header">
+              <p class="kicker">nanofake</p>
+              <h1 class="title">Data Playground</h1>
+              <p class="subtitle">Build fake record schemas and export JSON or CSV.</p>
+            </header>
 
-        <section class="card">
-          <label for="count">Record count</label>
-          <input id="count" type="number" min="1" max="2000" value="25" />
-
-          <label for="filter">Filter text (optional)</label>
-          <input id="filter" type="text" placeholder="e.g. ay or mail.com" />
-        </section>
-
-        <section class="card">
-          <div class="row-head">
-            <h2>Available Fields</h2>
-            <button id="refreshFields" type="button" class="btn btn-ghost">Refresh</button>
-          </div>
-          <p class="muted">Auto scanned from exported functions in src/*/index.ts</p>
-          <div id="availableFields" class="field-grid"></div>
-        </section>
-
-        <section class="card">
-          <h2>Field Builder</h2>
-          <p class="muted">Add or remove fields manually.</p>
-
-          <div class="builder">
-            <div>
-              <label for="fieldAlias">Output key</label>
-              <input id="fieldAlias" type="text" placeholder="e.g. customerEmail" />
+            <div class="scan-row">
+              <input
+                id="scanPath"
+                class="input terminal-input"
+                type="text"
+                value="src"
+                placeholder="e.g. src/finance"
+              />
+              <button id="scanBtn" type="button" class="btn btn-ghost">Scan</button>
+              <button
+                id="refreshFields"
+                type="button"
+                class="btn btn-ghost btn-icon"
+                title="Refresh field list (default src scan)"
+              >
+                ↻
+              </button>
             </div>
-            <div>
-              <label for="fieldSource">Source field</label>
-              <select id="fieldSource"></select>
+            <p id="scanStatus" class="muted scan-status"></p>
+
+            <div class="count-row">
+              <div class="count-field">
+                <label class="label" for="count">Records</label>
+                <input id="count" class="input terminal-input" type="number" min="1" max="2000" value="25" />
+              </div>
+              <button id="generate" type="button" class="btn gen-inline">Generate</button>
             </div>
-            <button id="addField" type="button" class="btn">Add Field</button>
+
+            <div class="filter-block">
+              <label class="label" for="filter">Filter</label>
+              <input
+                id="filter"
+                class="input terminal-input"
+                type="text"
+                placeholder="e.g. ay or mail.com"
+              />
+            </div>
           </div>
 
-          <ul id="selectedFields" class="selected-list"></ul>
-        </section>
+          <div class="panel-scroll">
+            <section class="card card-fields">
+              <div class="row-head fields-head">
+                <button
+                  type="button"
+                  id="fieldsCollapse"
+                  class="chevron-btn"
+                  aria-expanded="true"
+                  aria-label="Toggle available fields"
+                >
+                  ▾
+                </button>
+                <h2>Available Fields</h2>
+                <input
+                  id="fieldSearch"
+                  class="input terminal-input field-search-input"
+                  type="text"
+                  placeholder="search..."
+                  autocomplete="off"
+                />
+              </div>
+              <div id="fieldsBody" class="fields-body">
+                <p id="fieldsHint" class="hint">Scanned from exported functions under src</p>
+                <div id="availableFields" class="field-grid"></div>
+              </div>
+            </section>
 
-        <div class="actions">
-          <button id="generate" type="button" class="btn">Generate</button>
-          <button id="copy" type="button" class="btn btn-secondary">Copy JSON</button>
+            <section class="card card-presets">
+              <div class="row-head">
+                <h2>Presets</h2>
+                <button id="presetsToggle" type="button" class="btn btn-ghost">Show</button>
+              </div>
+              <div id="presetsGrid" class="presets-grid hidden"></div>
+            </section>
+
+            <section class="card card-builder">
+              <div class="row-head">
+                <h2>Custom Field</h2>
+                <button id="deriveToggle" type="button" class="btn btn-ghost btn-small">Derive from example</button>
+              </div>
+              <div class="builder-row">
+                <div>
+                  <label class="label" for="fieldAlias">Alias</label>
+                  <input id="fieldAlias" class="input terminal-input" type="text" placeholder="output key" />
+                </div>
+                <div>
+                  <label class="label" for="fieldSource">Source</label>
+                  <select id="fieldSource" class="input terminal-input select-input"></select>
+                </div>
+              </div>
+              <button id="addField" type="button" class="btn btn-block">Add →</button>
+
+              <div id="deriveSection" class="derive-section hidden">
+                <textarea
+                  id="deriveInput"
+                  class="input terminal-input derive-textarea"
+                  placeholder='Paste example JSON here, e.g. {"name":"John","email":"john@example.com"}'
+                  rows="4"
+                ></textarea>
+                <div class="derive-actions">
+                  <button id="detectBtn" type="button" class="btn">Detect schema</button>
+                  <span id="deriveStatus" class="muted"></span>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <h2>Selected</h2>
+              <ul id="selectedFields" class="selected-list"></ul>
+            </section>
+
+            <div class="actions-bottom">
+              <button id="copy" type="button" class="btn btn-ghost">Copy JSON</button>
+              <button id="downloadCsv" type="button" class="btn btn-ghost">Download JSON</button>
+              <button id="saveSchema" type="button" class="btn btn-ghost">Save schema</button>
+              <button id="loadSchema" type="button" class="btn btn-ghost">Load schema</button>
+              <button id="shareBtn" type="button" class="btn btn-ghost">Share</button>
+            </div>
+            <input id="loadSchemaFile" type="file" accept=".json" class="hidden-file" hidden />
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel-right">
+        <div class="output-header rhdr">
+          <span class="r-title">Output</span>
+          <span id="meta" class="meta-badge r-badge">0 records</span>
+          <div class="format-tabs" id="formatTabs">
+            <button type="button" class="fmt-tab active" data-fmt="json">JSON</button>
+            <button type="button" class="fmt-tab" data-fmt="csv">CSV</button>
+            <button type="button" class="fmt-tab" data-fmt="sql">SQL</button>
+          </div>
+        </div>
+        <div class="output-surface">
+          <pre class="output-pre"><code id="result" class="output-code"></code></pre>
         </div>
       </section>
+    </div>
 
-      <section class="panel panel-output">
-        <h2>Output</h2>
-        <p id="meta" class="meta">0 records</p>
-        <pre id="result" aria-live="polite">[]</pre>
-      </section>
-    </main>
-
-    <script type="module" src="/playground/app.js?v=2"></script>
+    <script type="module" src="/playground/app.js?v=8"></script>
   </body>
 </html>
