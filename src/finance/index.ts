@@ -1,7 +1,13 @@
 import { pickRandom } from "../utils/random";
 
-const ISSUER_PREFIXES = ["4", "5"] as const;
+/** Visa + Mastercard IIN ranges (plausible test numbers only; not real cards). */
+const ISSUER_PREFIXES = ["4", "51", "52", "53", "54", "55"] as const;
 
+/**
+ * Computes the Luhn check digit for the first 15 digits of a PAN.
+ * Iterates from right to left over `digits`; the rightmost body digit is doubled first,
+ * matching the usual card numbering weighting for a 16-digit PAN.
+ */
 const calculateLuhnCheckDigit = (digits: string): string => {
   let sum = 0;
   let shouldDouble = true;

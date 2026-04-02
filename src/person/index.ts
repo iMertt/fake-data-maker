@@ -1,30 +1,5 @@
+import { FIRST_NAMES, LAST_NAMES } from "../internal/names";
 import { pickRandom } from "../utils/random";
-
-const FIRST_NAMES = [
-  "Ahmet",
-  "Mehmet",
-  "Ayse",
-  "Fatma",
-  "Can",
-  "Elif",
-  "John",
-  "Emma",
-  "Noah",
-  "Sophia"
-] as const;
-
-const LAST_NAMES = [
-  "Yilmaz",
-  "Kaya",
-  "Demir",
-  "Sahin",
-  "Cetin",
-  "Aydin",
-  "Smith",
-  "Johnson",
-  "Brown",
-  "Davis"
-] as const;
 
 /**
  * Generates a random first name.

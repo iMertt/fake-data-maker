@@ -51,6 +51,8 @@ import { email } from "nanofake/internet";
 - `username(): string`
 - `creditCard(): string`
 
+`creditCard()` returns **synthetic** 16-digit numbers that pass the Luhn check. They are **not** real payment card numbers, are not issued by any bank, and must not be used where real PANs are expected. Treat them like any other fake test data in logs and APIs (PCI scanners may still flag long digit strings).
+
 ## Development
 
 ```bash

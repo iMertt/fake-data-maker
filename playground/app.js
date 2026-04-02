@@ -21,8 +21,29 @@ const fieldSourceSelect = document.getElementById("fieldSource");
 const availableFieldsContainer = document.getElementById("availableFields");
 const selectedFieldsContainer = document.getElementById("selectedFields");
 
+const required = [
+  countInput,
+  filterInput,
+  result,
+  meta,
+  generateButton,
+  copyButton,
+  addFieldButton,
+  refreshFieldsButton,
+  fieldAliasInput,
+  fieldSourceSelect,
+  availableFieldsContainer,
+  selectedFieldsContainer
+];
+
+if (required.some((el) => !el)) {
+  console.error("nanofake playground: missing required DOM elements.");
+}
+
 let availableFields = [];
 let selectedFields = [];
+
+const MAX_FILTER_ATTEMPTS = 50_000;
 
 const normalizeAlias = (alias) => {
   const clean = alias.trim().replace(/[^a-zA-Z0-9_]/g, "_");
@@ -49,7 +70,69 @@ const matchesFilter = (record, rawFilter) => {
   return Object.values(record).some((value) => String(value).toLowerCase().includes(filter));
 };
 
+const parseCount = (raw) => Math.min(2000, Math.max(1, Number(raw) || 1));
+
+/**
+ * Builds records. With an active filter, generates until `count` matches or cap is hit.
+ */
+const buildRecords = (fields, count, filterRaw) => {
+  if (!filterRaw) {
+    const data = [];
+    for (let i = 0; i < count; i += 1) {
+      data.push(makeRecord(fields));
+    }
+    return { records: data, capped: false };
+  }
+
+  const filtered = [];
+  let attempts = 0;
+  while (filtered.length < count && attempts < MAX_FILTER_ATTEMPTS) {
+    const record = makeRecord(fields);
+    if (matchesFilter(record, filterRaw)) filtered.push(record);
+    attempts += 1;
+  }
+
+  return { records: filtered, capped: filtered.length < count };
+};
+
+const renderOutput = (records, fieldsCount, filterRaw, capped) => {
+  if (!result || !meta) return;
+  result.textContent = JSON.stringify(records, null, 2);
+  const filterNote = filterRaw && capped ? " (filter cap reached)" : "";
+  meta.textContent = `${records.length} records | ${fieldsCount} fields${filterNote}`;
+};
+
+const generateData = () => {
+  if (!countInput || !filterInput || !result || !meta) return;
+
+  const count = parseCount(countInput.value);
+  const filterRaw = filterInput.value.trim();
+
+  if (selectedFields.length === 0) {
+    result.textContent = "[]";
+    meta.textContent = "0 records (add at least one field)";
+    return;
+  }
+
+  const { records, capped } = buildRecords(selectedFields, count, filterRaw);
+  renderOutput(records, selectedFields.length, filterRaw, capped);
+};
+
+const debounce = (fn, ms) => {
+  let t = null;
+  return (...args) => {
+    if (t !== null) clearTimeout(t);
+    t = setTimeout(() => {
+      t = null;
+      fn(...args);
+    }, ms);
+  };
+};
+
+const debouncedGenerate = debounce(generateData, 150);
+
 const renderSelectedFields = () => {
+  if (!selectedFieldsContainer) return;
   selectedFieldsContainer.textContent = "";
 
   if (selectedFields.length === 0) {
@@ -94,6 +177,7 @@ const addSelectedField = (source, alias = source) => {
 };
 
 const renderFieldSourceOptions = () => {
+  if (!fieldSourceSelect) return;
   fieldSourceSelect.textContent = "";
 
   for (const field of availableFields) {
@@ -105,6 +189,7 @@ const renderFieldSourceOptions = () => {
 };
 
 const renderAvailableFields = () => {
+  if (!availableFieldsContainer) return;
   availableFieldsContainer.textContent = "";
 
   if (availableFields.length === 0) {
@@ -137,66 +222,75 @@ const renderAvailableFields = () => {
 };
 
 const loadFields = async () => {
-  const response = await fetch("/api/fields");
-  const payload = await response.json();
+  if (!meta) return;
+  try {
+    const response = await fetch("/api/fields");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
 
-  availableFields = payload.fields.filter((field) => generatorByField[field.field]);
-  renderFieldSourceOptions();
-  renderAvailableFields();
+    availableFields = payload.fields.filter((field) => generatorByField[field.field]);
+    renderFieldSourceOptions();
+    renderAvailableFields();
 
-  if (selectedFields.length === 0) {
-    for (const field of ["firstName", "lastName", "username", "email"]) {
-      if (availableFields.some((candidate) => candidate.field === field)) {
-        addSelectedField(field, field);
+    if (selectedFields.length === 0) {
+      for (const field of ["firstName", "lastName", "username", "email"]) {
+        if (availableFields.some((candidate) => candidate.field === field)) {
+          addSelectedField(field, field);
+        }
       }
     }
-  }
 
-  renderSelectedFields();
-  generateData();
+    renderSelectedFields();
+    generateData();
+  } catch (e) {
+    console.error("loadFields failed:", e);
+    meta.textContent = "Could not load field list. Check console and try Refresh.";
+    if (availableFieldsContainer) {
+      availableFieldsContainer.textContent = "";
+      const err = document.createElement("p");
+      err.className = "muted";
+      err.textContent = "Failed to load /api/fields.";
+      availableFieldsContainer.append(err);
+    }
+  }
 };
 
-const generateData = () => {
-  const count = Math.min(2000, Math.max(1, Number(countInput.value) || 1));
+if (generateButton) generateButton.addEventListener("click", generateData);
 
-  if (selectedFields.length === 0) {
-    result.textContent = "[]";
-    meta.textContent = "0 records (add at least one field)";
-    return;
-  }
+if (addFieldButton) {
+  addFieldButton.addEventListener("click", () => {
+    const source = fieldSourceSelect?.value ?? "";
+    const alias = fieldAliasInput?.value || source;
 
-  const data = [];
-  for (let i = 0; i < count; i += 1) {
-    data.push(makeRecord(selectedFields));
-  }
+    if (!source) return;
 
-  const filtered = data.filter((record) => matchesFilter(record, filterInput.value));
-  result.textContent = JSON.stringify(filtered, null, 2);
-  meta.textContent = `${filtered.length} records | ${selectedFields.length} fields`;
-};
+    addSelectedField(source, alias);
+    if (fieldAliasInput) fieldAliasInput.value = "";
+    generateData();
+  });
+}
 
-generateButton.addEventListener("click", generateData);
+if (refreshFieldsButton) {
+  refreshFieldsButton.addEventListener("click", async () => {
+    await loadFields();
+  });
+}
 
-addFieldButton.addEventListener("click", () => {
-  const source = fieldSourceSelect.value;
-  const alias = fieldAliasInput.value || source;
+if (countInput) countInput.addEventListener("change", generateData);
+if (filterInput) filterInput.addEventListener("input", debouncedGenerate);
 
-  if (!source) return;
-
-  addSelectedField(source, alias);
-  fieldAliasInput.value = "";
-  generateData();
-});
-
-refreshFieldsButton.addEventListener("click", async () => {
-  await loadFields();
-});
-
-countInput.addEventListener("change", generateData);
-filterInput.addEventListener("input", generateData);
-
-copyButton.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(result.textContent ?? "[]");
-});
+if (copyButton) {
+  copyButton.addEventListener("click", async () => {
+    const text = result?.textContent ?? "[]";
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      console.error("Clipboard copy failed:", e);
+      if (meta) meta.textContent = `${meta.textContent ?? ""} | Copy failed (clipboard permission?)`;
+    }
+  });
+}
 
 loadFields();

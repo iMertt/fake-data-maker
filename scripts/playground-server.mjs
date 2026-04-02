@@ -1,11 +1,12 @@
 import { createServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { extname, normalize, relative, resolve } from "node:path";
 import { cwd } from "node:process";
 import { URL } from "node:url";
 
 const PORT = Number(process.env.PORT ?? 4173);
 const ROOT = cwd();
+const ROOT_RESOLVED = resolve(ROOT);
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -15,21 +16,35 @@ const MIME_TYPES = {
   ".map": "application/json; charset=utf-8"
 };
 
+/** Resolves a path under project root; rejects traversal outside ROOT. */
 const safePath = (urlPath) => {
   const normalized = normalize(urlPath).replace(/^([/\\])+/, "");
-  return join(ROOT, normalized);
+  const resolved = resolve(ROOT, normalized);
+  const rel = relative(ROOT_RESOLVED, resolved);
+  if (rel.startsWith("..") || rel === "..") {
+    const err = new Error("Path traversal detected");
+    err.code = "EPATHTRAVERSAL";
+    throw err;
+  }
+  return resolved;
 };
 
+let cachedFieldDefinitions = null;
+
 const getFieldDefinitions = async () => {
+  if (cachedFieldDefinitions !== null) {
+    return cachedFieldDefinitions;
+  }
+
   const sourceRoot = safePath("src");
   const entries = await readdir(sourceRoot, { withFileTypes: true });
   const fieldDefinitions = [];
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    if (entry.name === "utils") continue;
+    if (entry.name === "utils" || entry.name === "internal") continue;
 
-    const modulePath = join(sourceRoot, entry.name, "index.ts");
+    const modulePath = resolve(sourceRoot, entry.name, "index.ts");
 
     try {
       const content = await readFile(modulePath, "utf8");
@@ -47,7 +62,8 @@ const getFieldDefinitions = async () => {
     }
   }
 
-  return fieldDefinitions.sort((a, b) => a.field.localeCompare(b.field));
+  cachedFieldDefinitions = fieldDefinitions.sort((a, b) => a.field.localeCompare(b.field));
+  return cachedFieldDefinitions;
 };
 
 const serveFile = async (path, response) => {
@@ -72,20 +88,36 @@ createServer(async (request, response) => {
       const fields = await getFieldDefinitions();
       response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       response.end(JSON.stringify({ fields }));
-    } catch {
-      response.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
-      response.end(JSON.stringify({ fields: [], error: "Failed to scan fields." }));
+    } catch (error) {
+      if (error?.code === "EPATHTRAVERSAL") {
+        response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+        response.end("Forbidden");
+      } else {
+        response.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ fields: [], error: "Failed to scan fields." }));
+      }
     }
     return;
   }
 
-  if (url.pathname === "/" || url.pathname === "/index.html") {
-    await serveFile(safePath("playground/index.html"), response);
-    return;
-  }
+  try {
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      await serveFile(safePath("playground/index.html"), response);
+      return;
+    }
 
-  if (url.pathname.startsWith("/playground/") || url.pathname.startsWith("/dist/")) {
-    await serveFile(safePath(url.pathname), response);
+    if (url.pathname.startsWith("/playground/") || url.pathname.startsWith("/dist/")) {
+      await serveFile(safePath(url.pathname), response);
+      return;
+    }
+  } catch (error) {
+    if (error?.code === "EPATHTRAVERSAL") {
+      response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Forbidden");
+      return;
+    }
+    response.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Internal error");
     return;
   }
 

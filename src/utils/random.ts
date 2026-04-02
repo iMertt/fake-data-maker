@@ -11,5 +11,9 @@ export const pickRandom = <T>(items: readonly T[]): T => {
   }
 
   const index = (Math.random() * items.length) | 0;
-  return items[index] as T;
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`Index ${index} out of bounds for array of length ${items.length}.`);
+  }
+  return item;
 };
