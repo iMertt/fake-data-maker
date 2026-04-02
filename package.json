@@ -1,0 +1,62 @@
+{
+  "name": "nanofake",
+  "version": "0.1.0",
+  "description": "Zero-dependency, tree-shakable fake data generator for TypeScript and JavaScript.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./person": {
+      "types": "./dist/person/index.d.ts",
+      "import": "./dist/person/index.js",
+      "require": "./dist/person/index.cjs"
+    },
+    "./internet": {
+      "types": "./dist/internet/index.d.ts",
+      "import": "./dist/internet/index.js",
+      "require": "./dist/internet/index.cjs"
+    },
+    "./finance": {
+      "types": "./dist/finance/index.d.ts",
+      "import": "./dist/finance/index.js",
+      "require": "./dist/finance/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "playground": "npm run build && node scripts/playground-server.mjs"
+  },
+  "keywords": [
+    "fake-data",
+    "faker",
+    "generator",
+    "typescript",
+    "tree-shakable",
+    "zero-dependency"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

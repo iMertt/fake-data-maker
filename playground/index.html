@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nanofake Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/playground/styles.css?v=2" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+    <main class="app">
+      <section class="panel panel-controls">
+        <header class="hero">
+          <p class="kicker">nanofake</p>
+          <h1>Data Playground</h1>
+          <p class="subtitle">Build your own fake record schema and generate filtered JSON instantly.</p>
+        </header>
+
+        <section class="card">
+          <label for="count">Record count</label>
+          <input id="count" type="number" min="1" max="2000" value="25" />
+
+          <label for="filter">Filter text (optional)</label>
+          <input id="filter" type="text" placeholder="e.g. ay or mail.com" />
+        </section>
+
+        <section class="card">
+          <div class="row-head">
+            <h2>Available Fields</h2>
+            <button id="refreshFields" type="button" class="btn btn-ghost">Refresh</button>
+          </div>
+          <p class="muted">Auto scanned from exported functions in src/*/index.ts</p>
+          <div id="availableFields" class="field-grid"></div>
+        </section>
+
+        <section class="card">
+          <h2>Field Builder</h2>
+          <p class="muted">Add or remove fields manually.</p>
+
+          <div class="builder">
+            <div>
+              <label for="fieldAlias">Output key</label>
+              <input id="fieldAlias" type="text" placeholder="e.g. customerEmail" />
+            </div>
+            <div>
+              <label for="fieldSource">Source field</label>
+              <select id="fieldSource"></select>
+            </div>
+            <button id="addField" type="button" class="btn">Add Field</button>
+          </div>
+
+          <ul id="selectedFields" class="selected-list"></ul>
+        </section>
+
+        <div class="actions">
+          <button id="generate" type="button" class="btn">Generate</button>
+          <button id="copy" type="button" class="btn btn-secondary">Copy JSON</button>
+        </div>
+      </section>
+
+      <section class="panel panel-output">
+        <h2>Output</h2>
+        <p id="meta" class="meta">0 records</p>
+        <pre id="result" aria-live="polite">[]</pre>
+      </section>
+    </main>
+
+    <script type="module" src="/playground/app.js?v=2"></script>
+  </body>
+</html>
